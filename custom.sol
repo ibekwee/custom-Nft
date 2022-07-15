@@ -78,11 +78,9 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
     whitelist[_beneficiary] = true;
   }
 
-  function TimedCrowdsale(uint256 _openingTime, uint256 _closingTime) public onlyOwner{
-    require(_openingTime >= block.timestamp);
-    require(_closingTime >= _openingTime);
-    openingTime = _openingTime;
-    closingTime = _closingTime;
+  function TimedCrowdsale(uint256 _minutes) public onlyOwner{
+    openingTime = block.timestamp;
+    closingTime = block.timestamp + (_minutes * 60);
   }
 
     function addManyToWhitelist(address[] memory _beneficiaries) public onlyOwner {
@@ -106,25 +104,16 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
         }
     }
 
-    modifier isPresale {
+    function iswhitelisted(address xyz) public view returns (bool) {
       require(checkStage() == Stage.presale);
-      _;
-    }
-
-    function iswhitelisted(address xyz) public view isPresale returns (bool) {
       if(whitelist[xyz]) return true;
       else return false;
     }
 
     modifier buffer(address abc) {
-      require(openingTime != 0);
-      require(checkStage() != Stage.locked);
-      require((checkStage() == Stage.publicsale || iswhitelisted(abc)));
-      _;
-    }
-
-    modifier checkAmount(uint _mintAmt) {
-      require(_mintAmt < 8 && _mintAmt > 0);
+      require(openingTime != 0, "Not in state 1");
+      require(checkStage() != Stage.locked,"Not in state 2");
+      require((checkStage() == Stage.publicsale || iswhitelisted(abc)),"Not in state 2");
       _;
     }
 
@@ -132,8 +121,9 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
       return uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)))%10;
     }
 
-    function safeMint(address to, uint _amtOfTokensToMint) public payable checkAmount(_amtOfTokensToMint) buffer(to){
-        require(msg.value == (_amtOfTokensToMint * mintRate));
+    function safeMint(address to, uint _amtOfTokensToMint) public payable buffer(to){
+        require(_mintAmt < 8 && _mintAmt > 0, "Input should be less than 8");
+        require(msg.value == (_amtOfTokensToMint * mintRate), "send correct fee");
         for (uint i = 0; i < _amtOfTokensToMint; i++) {
           _tokenIdCounter.increment();
           uint256 tokenId = _tokenIdCounter.current();
@@ -147,6 +137,10 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
           }
            _setTokenURI(tokenId, finalURI);
         }
+    }
+
+    function getMintFees(uint _amtOfTokensToMint) public view returns(uint){
+      return (_amtOfTokensToMint * mintRate);
     }
 
     function reserveMint(address _owner, uint _reserveAmt) public onlyOwner{
