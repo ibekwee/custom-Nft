@@ -40,6 +40,7 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
     }
 
     mapping(address => bool) public whitelist;
+
     
     uint256 public openingTime;
     uint256 public closingTime;
@@ -50,6 +51,7 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
     string public baseExtension = ".json";
 
     enum Stage {locked, presale, publicsale}
+    Stage state;
 
     function uint2strk(uint256 _i) internal pure returns (string memory str) {
       if (_i == 0)
@@ -122,7 +124,7 @@ contract CustomNft is ERC721, Ownable, ERC721URIStorage, ERC721Burnable{
     }
 
     function safeMint(address to, uint _amtOfTokensToMint) public payable buffer(to){
-        require(_mintAmt < 8 && _mintAmt > 0, "Input should be less than 8");
+        require(_amtOfTokensToMint < 8 && _amtOfTokensToMint > 0, "Input should be less than 8");
         require(msg.value == (_amtOfTokensToMint * mintRate), "send correct fee");
         for (uint i = 0; i < _amtOfTokensToMint; i++) {
           _tokenIdCounter.increment();
